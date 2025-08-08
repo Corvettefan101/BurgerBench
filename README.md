@@ -24,11 +24,11 @@ This tool is perfect for developers and AI enthusiasts who want to compare the p
 *   **Convenient Utilities:**
     *   **Copy to Clipboard:** Easily copy the generated HTML to your clipboard.
     *   **Download HTML:** Download the generated HTML as a `.html` file for local inspection or use.
-*   **Local Persistence:** API keys and selected models are saved securely in your browser's local storage and are not sent to any external DB, so you don't have to re-enter them on every visit.
+*   **Local Persistence:** API keys and selected models are saved securely in your browser's local storage and are not sent to any external DB, so you don't have to re-enter them on every visit. This is true for both the local and hosted version of BurgerBench
 
 ## 🚀 Getting Started
 
-To use BurgerBench, simply open the `index.html` file in your web browser.
+To use BurgerBench, simply open the `index.html` file in your web browser or visit our hosted version https://burgerbench.pages.dev/
 
 ### Prerequisites
 
