@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>BurgerBench: AI Benchmarking Tool</title>
+		<link
+			rel="icon"
+			href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍔</text></svg>"
+		/>
+
+		<!-- Tailwind CSS CDN -->
+		<script src="https://cdn.tailwindcss.com"></script>
+
+		<!-- Google Fonts & Icons -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+			rel="stylesheet"
+		/>
+
+		<style>
+			/* Base styles */
+			body {
+				font-family: "Inter", sans-serif;
+				background-color: #0f172a; /* bg-slate-900 */
+				color: #e2e8f0; /* text-slate-200 */
+			}
+			.material-symbols-outlined {
+				font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+			}
+			.loading-spinner {
+				animation: spinner 0.8s linear infinite;
+			}
+			@keyframes spinner {
+				to {
+					transform: rotate(360deg);
+				}
+			}
+
+			/* Custom scrollbar */
+			::-webkit-scrollbar {
+				width: 8px;
+			}
+			::-webkit-scrollbar-track {
+				background: #1e293b;
+			}
+			::-webkit-scrollbar-thumb {
+				background: #475569;
+				border-radius: 4px;
+			}
+			::-webkit-scrollbar-thumb:hover {
+				background: #64748b;
+			}
+		</style>
+	</head>
+	<body class="antialiased">
+		<div class="min-h-screen p-4 sm:p-6 lg:p-8">
+			<div class="max-w-7xl mx-auto">
+				<!-- Header -->
+				<header
+					class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-slate-700"
+				>
+					<div class="flex items-center gap-3 mb-4 sm:mb-0">
+						<div class="text-4xl">🍔</div>
+						<h1 class="text-3xl font-bold text-white">BurgerBench</h1>
+					</div>
+					<nav class="flex items-center space-x-2 rounded-lg bg-slate-800 p-1">
+						<button id="main-page-btn" class="nav-btn active">
+							<span class="material-symbols-outlined">home</span>
+							Main
+						</button>
+						<button id="settings-page-btn" class="nav-btn">
+							<span class="material-symbols-outlined">settings</span>
+							Settings
+						</button>
+					</nav>
+				</header>
+
+				<!-- Main Benchmarking Page -->
+				<main id="main-page">
+					<div
+						class="bg-slate-800/50 p-6 sm:p-8 rounded-2xl border border-slate-700 text-center shadow-2xl shadow-slate-950/50"
+					>
+						<h2 class="text-2xl font-semibold text-white mb-3">
+							Run the Benchmark
+						</h2>
+						<p class="text-slate-400 mb-6 max-w-2xl mx-auto">
+							Select your models in settings, then click below to run the test.
+						</p>
+						<div
+							class="bg-slate-900 p-4 rounded-xl text-slate-400 mb-6 border border-slate-700"
+						>
+							<p class="font-semibold text-white mb-2">Benchmark Prompt:</p>
+							<p id="current-prompt-display" class="italic"></p>
+						</div>
+						<button
+							id="run-test-btn"
+							class="bg-orange-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-500/50 transition-all duration-300 transform hover:scale-105 flex items-center justify-center mx-auto min-w-[150px] h-[50px]"
+						>
+							<span id="run-test-text" class="flex items-center gap-2">
+								<span class="material-symbols-outlined">play_arrow</span>
+								Run Test
+							</span>
+							<div
+								id="loading-spinner"
+								class="hidden w-6 h-6 border-4 border-white/20 border-t-white rounded-full loading-spinner"
+							></div>
+						</button>
+					</div>
+
+					<!-- Results Section -->
+					<div id="results-section" class="hidden mt-10">
+						<div
+							class="bg-slate-800/50 p-6 sm:p-8 rounded-2xl border border-slate-700 shadow-2xl shadow-slate-950/50 mb-8"
+						>
+							<h3 class="text-2xl font-semibold text-white mb-4">
+								Performance Comparison
+							</h3>
+							<div class="relative h-96">
+								<canvas id="performance-chart"></canvas>
+							</div>
+						</div>
+						<h3 class="text-2xl font-semibold text-white mb-4 mt-8">
+							Benchmark Results
+						</h3>
+						<div
+							id="results-summary"
+							class="grid md:grid-cols-1 lg:grid-cols-2 gap-8"
+						></div>
+					</div>
+				</main>
+
+				<!-- Settings Page -->
+				<section id="settings-page" class="hidden">
+					<div class="space-y-8">
+						<div class="grid lg:grid-cols-5 gap-8">
+							<!-- Left Column: API Keys -->
+							<div class="lg:col-span-2 space-y-8">
+								<div
+									class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 shadow-2xl shadow-slate-950/50 h-full"
+								>
+									<h2 class="text-2xl font-semibold text-white mb-4">
+										API Keys
+									</h2>
+									<p class="text-slate-400 mb-6">
+										Enter keys to fetch available models.
+									</p>
+									<div class="space-y-6">
+										<div>
+											<label
+												for="openai-key"
+												class="block text-sm font-medium text-slate-300 mb-2"
+												>OpenAI API Key:</label
+											>
+											<div class="flex space-x-2">
+												<input
+													type="password"
+													id="openai-key"
+													class="input-field w-full p-2.5 rounded-lg border bg-slate-700 border-slate-600 placeholder-slate-400 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+													placeholder="sk-xxxxxxxx"
+												/>
+												<button id="fetch-openai-btn" class="btn-secondary">
+													Fetch
+												</button>
+											</div>
+										</div>
+										<div>
+											<label
+												for="openrouter-key"
+												class="block text-sm font-medium text-slate-300 mb-2"
+												>OpenRouter API Key:</label
+											>
+											<div class="flex space-x-2">
+												<input
+													type="password"
+													id="openrouter-key"
+													class="input-field w-full p-2.5 rounded-lg border bg-slate-700 border-slate-600 placeholder-slate-400 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+													placeholder="sk-or-xxxxxxxx"
+												/>
+												<button id="fetch-openrouter-btn" class="btn-secondary">
+													Fetch
+												</button>
+											</div>
+										</div>
+										<div>
+											<label
+												for="anthropic-key"
+												class="block text-sm font-medium text-slate-300 mb-2"
+												>Anthropic API Key:</label
+											>
+											<div class="flex space-x-2">
+												<input
+													type="password"
+													id="anthropic-key"
+													class="input-field w-full p-2.5 rounded-lg border bg-slate-700 border-slate-600 placeholder-slate-400 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+													placeholder="sk-ant-api03-xxxx"
+												/>
+												<button id="fetch-anthropic-btn" class="btn-secondary">
+													Check
+												</button>
+											</div>
+										</div>
+										<div>
+											<label
+												for="gemini-key"
+												class="block text-sm font-medium text-slate-300 mb-2"
+												>Google Gemini API Key:</label
+											>
+											<div class="flex space-x-2">
+												<input
+													type="password"
+													id="gemini-key"
+													class="input-field w-full p-2.5 rounded-lg border bg-slate-700 border-slate-600 placeholder-slate-400 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+													placeholder="AIzaSyXXXXXX"
+												/>
+												<button id="fetch-gemini-btn" class="btn-secondary">
+													Load
+												</button>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- Right Column: Model Selection -->
+							<div class="lg:col-span-3">
+								<div
+									class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 shadow-2xl shadow-slate-950/50 h-full"
+								>
+									<h3 class="text-2xl font-semibold text-white mb-4">
+										Model Selection
+									</h3>
+									<div class="space-y-6">
+										<div>
+											<h4
+												class="text-lg font-medium text-white mb-3 border-b border-slate-700 pb-2"
+											>
+												OpenAI
+											</h4>
+											<div id="openai-models" class="model-container"></div>
+										</div>
+										<div>
+											<h4
+												class="text-lg font-medium text-white mb-3 border-b border-slate-700 pb-2"
+											>
+												OpenRouter
+											</h4>
+											<div id="openrouter-models" class="model-container"></div>
+										</div>
+										<div>
+											<h4
+												class="text-lg font-medium text-white mb-3 border-b border-slate-700 pb-2"
+											>
+												Anthropic
+											</h4>
+											<div id="anthropic-models" class="model-container"></div>
+										</div>
+										<div>
+											<h4
+												class="text-lg font-medium text-white mb-3 border-b border-slate-700 pb-2"
+											>
+												Google Gemini
+											</h4>
+											<div id="gemini-models" class="model-container"></div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!-- Save Button -->
+						<div class="flex justify-end mt-8">
+							<button
+								id="save-settings-btn"
+								class="bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-500/50 transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
+							>
+								<span class="material-symbols-outlined">save</span>
+								Save Settings
+							</button>
+						</div>
+					</div>
+				</section>
+			</div>
+		</div>
+
+		<!-- Custom Message Box -->
+		<div
+			id="message-box"
+			class="fixed bottom-5 right-5 p-4 rounded-lg shadow-xl text-white transition-all duration-300 transform translate-y-20 opacity-0 z-50"
+		></div>
+
+		<!-- Chart.js CDN -->
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+		<script>
+			// --- Global Variables & Config ---
+			const DEFAULT_PROMPT =
+				"Make me a website for my burger restaurant that looks modern with good colors in a single html file";
+			const geminiApiKeyPlaceholder = ""; // This will be replaced by the Canvas environment
+
+			// --- DOM Elements ---
+			const mainPage = document.getElementById("main-page");
+			const settingsPage = document.getElementById("settings-page");
+			const mainPageBtn = document.getElementById("main-page-btn");
+			const settingsPageBtn = document.getElementById("settings-page-btn");
+			const runTestBtn = document.getElementById("run-test-btn");
+			const runTestText = document.getElementById("run-test-text");
+			const loadingSpinner = document.getElementById("loading-spinner");
+			const resultsSection = document.getElementById("results-section");
+			const resultsSummary = document.getElementById("results-summary");
+			const performanceChartCanvas =
+				document.getElementById("performance-chart");
+			const messageBox = document.getElementById("message-box");
+			const openaiKeyInput = document.getElementById("openai-key");
+			const openrouterKeyInput = document.getElementById("openrouter-key");
+			const anthropicKeyInput = document.getElementById("anthropic-key");
+			const geminiKeyInput = document.getElementById("gemini-key");
+			const fetchOpenaiBtn = document.getElementById("fetch-openai-btn");
+			const fetchOpenrouterBtn = document.getElementById("fetch-openrouter-btn");
+			const fetchAnthropicBtn = document.getElementById("fetch-anthropic-btn");
+			const fetchGeminiBtn = document.getElementById("fetch-gemini-btn");
+			const openaiModelsContainer = document.getElementById("openai-models");
+			const openrouterModelsContainer =
+				document.getElementById("openrouter-models");
+			const anthropicModelsContainer =
+				document.getElementById("anthropic-models");
+			const geminiModelsContainer = document.getElementById("gemini-models");
+			const currentPromptDisplay = document.getElementById(
+				"current-prompt-display"
+			);
+			const saveSettingsBtn = document.getElementById("save-settings-btn");
+
+			let performanceChart = null;
+
+			// --- Global State ---
+			let state = {
+				settings: {
+					apiKeys: {
+						openai: "",
+						openrouter: "",
+						anthropic: "",
+						gemini: "",
+					},
+					selectedModels: [],
+				},
+				fetchedModels: {
+					openai: [],
+					openrouter: [],
+					anthropic: [],
+					gemini: [],
+				},
+				testResults: [],
+			};
+
+			// --- Settings Persistence (localStorage) ---
+			function loadSettingsFromLocalStorage() {
+				const savedSettings = localStorage.getItem("burgerBenchSettings");
+				if (savedSettings) {
+					try {
+						const parsedSettings = JSON.parse(savedSettings);
+						state.settings.apiKeys =
+							parsedSettings.apiKeys || state.settings.apiKeys;
+						state.settings.selectedModels =
+							parsedSettings.selectedModels || state.settings.selectedModels;
+						console.log("Settings loaded from localStorage:", state.settings);
+					} catch (error) {
+						console.error("Error parsing settings from localStorage:", error);
+						localStorage.removeItem("burgerBenchSettings");
+					}
+				}
+				updateUIFromState();
+				Object.keys(state.settings.apiKeys).forEach((provider) => {
+					if (state.settings.apiKeys[provider]) {
+						fetchModels(provider);
+					}
+				});
+			}
+
+			function saveSettingsToLocalStorage() {
+				const currentSettings = {
+					apiKeys: {
+						openai: openaiKeyInput.value,
+						openrouter: openrouterKeyInput.value,
+						anthropic: anthropicKeyInput.value,
+						gemini: geminiKeyInput.value,
+					},
+					selectedModels: Array.from(
+						document.querySelectorAll('input[name="model-select"]:checked')
+					).map((cb) => cb.value),
+				};
+
+				try {
+					localStorage.setItem(
+						"burgerBenchSettings",
+						JSON.stringify(currentSettings)
+					);
+					state.settings = currentSettings;
+					showMessage("Settings saved to browser!", "success");
+					updateUIFromState();
+				} catch (error) {
+					console.error("Error saving settings to localStorage:", error);
+					showMessage("Could not save your settings.", "error");
+				}
+			}
+
+			// --- UI Functions ---
+			function updateUIFromState() {
+				openaiKeyInput.value = state.settings.apiKeys.openai;
+				openrouterKeyInput.value = state.settings.apiKeys.openrouter;
+				anthropicKeyInput.value = state.settings.apiKeys.anthropic;
+				geminiKeyInput.value = state.settings.apiKeys.gemini;
+				currentPromptDisplay.textContent = `"${DEFAULT_PROMPT}"`;
+			}
+
+			function showMessage(message, type = "info", duration = 3000) {
+				const typeClasses = {
+					info: "bg-blue-500",
+					success: "bg-green-500",
+					error: "bg-red-500",
+				};
+				messageBox.textContent = message;
+				messageBox.className = `fixed bottom-5 right-5 p-4 rounded-lg shadow-xl text-white transition-all duration-300 transform z-50 ${typeClasses[type]}`;
+				messageBox.classList.remove("translate-y-20", "opacity-0");
+				setTimeout(() => {
+					messageBox.classList.add("translate-y-20", "opacity-0");
+				}, duration);
+			}
+
+			function togglePage(pageId) {
+				mainPage.classList.toggle("hidden", pageId !== "main-page");
+				settingsPage.classList.toggle("hidden", pageId !== "settings-page");
+				mainPageBtn.classList.toggle("active", pageId === "main-page");
+				settingsPageBtn.classList.toggle("active", pageId === "settings-page");
+			}
+
+			// --- API & Model Logic ---
+			async function fetchModels(provider) {
+				const key = document.getElementById(`${provider}-key`).value;
+				if (!key) {
+					showMessage(`Please enter a valid API key for ${provider}.`, "error");
+					return;
+				}
+
+				const btn = document.getElementById(`fetch-${provider}-btn`);
+				const originalText = btn.innerHTML;
+				btn.innerHTML =
+					'<div class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full loading-spinner"></div>';
+				btn.disabled = true;
+
+				try {
+					let models = [];
+					switch (provider) {
+						case "openai":
+							const openaiResponse = await fetch(
+								"https://api.openai.com/v1/models",
+								{ headers: { Authorization: `Bearer ${key}` } }
+							);
+							if (!openaiResponse.ok) {
+								const errorText = await openaiResponse.text();
+								throw new Error(
+									`API Error (${openaiResponse.status}): ${errorText}`
+								);
+							}
+							const openaiData = await openaiResponse.json();
+							models = openaiData.data
+								.map((m) => m.id)
+								.filter((id) => id.includes("gpt"));
+							showMessage(
+								`${models.length} OpenAI GPT models loaded.`,
+								"success"
+							);
+							break;
+						case "openrouter":
+							const openrouterResponse = await fetch(
+								"https://openrouter.ai/api/v1/models",
+								{ headers: { Authorization: `Bearer ${key}` } }
+							);
+							if (!openrouterResponse.ok) {
+								const errorText = await openrouterResponse.text();
+								throw new Error(
+									`API Error (${openrouterResponse.status}): ${errorText}`
+								);
+							}
+							const openrouterData = await openrouterResponse.json();
+							models = openrouterData.data
+								? openrouterData.data.map((m) => m.id)
+								: [];
+							break;
+						case "anthropic":
+							const anthropicTestResponse = await fetch(
+								"https://api.anthropic.com/v1/messages",
+								{
+									method: "POST",
+									headers: {
+										"x-api-key": key,
+										"anthropic-version": "2023-06-01",
+										"Content-Type": "application/json",
+									},
+									body: JSON.stringify({
+										model: "claude-3-haiku-20240307",
+										max_tokens: 1,
+										messages: [{ role: "user", content: "hello" }],
+									}),
+								}
+							);
+							if (!anthropicTestResponse.ok) {
+								const errorBody = await anthropicTestResponse
+									.json()
+									.catch(() => anthropicTestResponse.text());
+								const errorMessage =
+									errorBody?.error?.message || JSON.stringify(errorBody);
+								throw new Error(
+									`API key seems invalid. ${anthropicTestResponse.status}: ${errorMessage}`
+								);
+							}
+							showMessage("Anthropic API key is valid!", "success");
+							models = [
+								"claude-3-opus-20240229",
+								"claude-3-sonnet-20240229",
+								"claude-3-haiku-20240307",
+							];
+							break;
+						case "gemini":
+							const geminiResponse = await fetch(
+								`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`
+							);
+							if (!geminiResponse.ok) {
+								const errorText = await geminiResponse.text();
+								throw new Error(
+									`API Error (${geminiResponse.status}): ${errorText}`
+								);
+							}
+							const geminiData = await geminiResponse.json();
+							models = geminiData.models
+								.filter((model) =>
+									model.supportedGenerationMethods.includes("generateContent")
+								)
+								.map((model) => model.name.split("/").pop());
+							showMessage(
+								`${models.length} generative Gemini models loaded.`,
+								"success"
+							);
+							break;
+					}
+					state.fetchedModels[provider] = models;
+					renderModels(provider, models);
+				} catch (error) {
+					showMessage(`Error for ${provider}: ${error.message}`, "error");
+					console.error(error);
+					renderModels(provider, []);
+				} finally {
+					btn.innerHTML = originalText;
+					btn.disabled = false;
+				}
+			}
+
+			function renderModels(provider, models) {
+				const container = document.getElementById(`${provider}-models`);
+				container.innerHTML = "";
+				if (models.length === 0) {
+					container.innerHTML = `<p class="text-slate-500 text-sm">No models found or key is invalid.</p>`;
+					return;
+				}
+				models.forEach((model) => {
+					const modelId = `${provider}/${model}`;
+					const isChecked = state.settings.selectedModels.includes(modelId);
+					const label = document.createElement("label");
+					label.className =
+						"flex items-center p-3 rounded-lg border border-slate-700 bg-slate-800 cursor-pointer hover:bg-slate-700/50 transition-colors duration-200 has-[:checked]:bg-orange-500/20 has-[:checked]:border-orange-500/50";
+					label.innerHTML = `
+                    <input type="checkbox" name="model-select" value="${modelId}" class="w-4 h-4 text-orange-600 bg-slate-600 border-slate-500 rounded focus:ring-orange-500" ${
+						isChecked ? "checked" : ""
+					}>
+                    <span class="text-sm font-medium text-slate-300 ml-3">${model}</span>
+                `;
+					container.appendChild(label);
+				});
+			}
+
+			// --- Benchmarking Logic ---
+			async function runBenchmarkForModel(modelId) {
+				const firstSlashIndex = modelId.indexOf("/");
+				const provider = modelId.substring(0, firstSlashIndex);
+				const modelName = modelId.substring(firstSlashIndex + 1);
+
+				const apiKeys = state.settings.apiKeys;
+				const currentPrompt = DEFAULT_PROMPT;
+
+				console.log(`Running test for ${provider}: ${modelName}...`);
+				const startTime = performance.now();
+
+				let generatedHtml = "";
+				let apiError = null;
+				let success = false;
+				let tokensUsed = 0;
+
+				for (let attempt = 0; attempt < 3; attempt++) {
+					try {
+						let response;
+						let result;
+						switch (provider) {
+							case "openai":
+							case "openrouter":
+								const apiHost =
+									provider === "openai"
+										? "https://api.openai.com/v1/chat/completions"
+										: "https://openrouter.ai/api/v1/chat/completions";
+								const authKey =
+									provider === "openai"
+										? apiKeys.openai
+										: apiKeys.openrouter;
+								response = await fetch(apiHost, {
+									method: "POST",
+									headers: {
+										"Content-Type": "application/json",
+										Authorization: `Bearer ${authKey}`,
+									},
+									body: JSON.stringify({
+										model: modelName,
+										messages: [{ role: "user", content: currentPrompt }],
+									}),
+								});
+								if (!response.ok) {
+									const errorText = await response.text();
+									throw new Error(`API Error (${response.status}): ${errorText}`);
+								}
+								result = await response.json();
+								if (!result.choices?.[0]?.message?.content)
+									throw new Error("Malformed API response.");
+								generatedHtml = result.choices[0].message.content;
+								tokensUsed = result.usage?.completion_tokens || 0;
+								break;
+							case "gemini":
+								response = await fetch(
+									`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${
+										apiKeys.gemini || geminiApiKeyPlaceholder
+									}`,
+									{
+										method: "POST",
+										headers: { "Content-Type": "application/json" },
+										body: JSON.stringify({
+											contents: [{ role: "user", parts: [{ text: currentPrompt }] }],
+										}),
+									}
+								);
+								if (!response.ok) {
+									const errorText = await response.text();
+									throw new Error(`API Error (${response.status}): ${errorText}`);
+								}
+								result = await response.json();
+								if (!result.candidates?.[0]?.content?.parts?.[0]?.text)
+									throw new Error("Malformed API response.");
+								generatedHtml = result.candidates[0].content.parts[0].text;
+								// Gemini API v1 doesn't return token count, so we estimate.
+								tokensUsed = Math.round(generatedHtml.length / 4);
+								break;
+							case "anthropic":
+								response = await fetch("https://api.anthropic.com/v1/messages", {
+									method: "POST",
+									headers: {
+										"x-api-key": apiKeys.anthropic,
+										"anthropic-version": "2023-06-01",
+										"Content-Type": "application/json",
+									},
+									body: JSON.stringify({
+										model: modelName,
+										max_tokens: 4096,
+										messages: [{ role: "user", content: currentPrompt }],
+									}),
+								});
+								if (!response.ok) {
+									const errorText = await response.text();
+									throw new Error(`API Error (${response.status}): ${errorText}`);
+								}
+								result = await response.json();
+								if (!result.content?.[0]?.text)
+									throw new Error(
+										result.error?.message || "Malformed API response."
+									);
+								generatedHtml = result.content[0].text;
+								tokensUsed = result.usage?.output_tokens || 0;
+								break;
+						}
+						success = true;
+						break;
+					} catch (error) {
+						console.error(`Attempt ${attempt + 1} failed for ${modelId}:`, error);
+						apiError = error;
+						if (attempt < 2) {
+							const delay = Math.pow(2, attempt) * 1000;
+							await new Promise((resolve) => setTimeout(resolve, delay));
+						}
+					}
+				}
+
+				const endTime = performance.now();
+				const duration = (endTime - startTime) / 1000;
+
+				if (!success) {
+					showMessage(`Failed to get response from ${modelId}.`, "error");
+					return {
+						model: modelId,
+						html: `<!-- Error: ${apiError.message} -->`,
+						speed: "N/A",
+						tokensUsed: 0,
+						tokensPerSecond: 0,
+					};
+				}
+
+				generatedHtml = generatedHtml
+					.replace(/```html\n?/g, "")
+					.replace(/```/g, "");
+				const tokensPerSecond =
+					duration > 0 ? (tokensUsed / duration).toFixed(1) : 0;
+
+				return {
+					model: modelId,
+					html: generatedHtml,
+					speed: duration.toFixed(2),
+					tokensUsed: tokensUsed,
+					tokensPerSecond: tokensPerSecond,
+				};
+			}
+
+			// --- Result Rendering ---
+			function renderResults() {
+				resultsSummary.innerHTML = "";
+				state.testResults.forEach((result, index) => {
+					const resultCard = document.createElement("div");
+					resultCard.className =
+						"bg-slate-800/50 p-6 rounded-2xl border border-slate-700 shadow-xl shadow-slate-950/50 flex flex-col";
+					const cleanModelName = result.model.split("/").pop();
+					resultCard.innerHTML = `
+                    <h4 class="text-xl font-semibold text-white mb-4">${cleanModelName}</h4>
+                    <div class="grid grid-cols-3 gap-4 mb-4 text-center">
+                        <div><div class="text-sm text-slate-400">Speed</div><div class="text-2xl font-semibold text-orange-400">${
+													result.speed
+												}s</div></div>
+                        <div><div class="text-sm text-slate-400">Tokens Used</div><div class="text-2xl font-semibold text-sky-400">${
+													result.tokensUsed
+												}</div></div>
+                        <div><div class="text-sm text-slate-400">Tokens/Sec</div><div class="text-2xl font-semibold text-teal-400">${
+													result.tokensPerSecond
+												}</div></div>
+                    </div>
+                    <div class="flex-grow flex flex-col min-h-0">
+                        <div class="flex border-b border-slate-600 mb-2">
+                            <button class="tab-btn active" data-tab="preview-${index}">Preview</button>
+                            <button class="tab-btn" data-tab="html-${index}">HTML</button>
+                            <button class="copy-btn ml-auto" data-html-id="html-content-${index}"><span class="material-symbols-outlined text-base">content_copy</span></button>
+                            <button class="download-btn" data-result-index="${index}"><span class="material-symbols-outlined text-base">download</span></button>
+                        </div>
+                        <div class="flex-grow relative">
+                            <div id="preview-${index}" class="tab-content active"><iframe class="w-full h-96 bg-white rounded-lg border border-slate-600" srcdoc="${result.html.replace(
+						/"/g,
+						"&quot;"
+					)}"></iframe></div>
+                            <div id="html-${index}" class="tab-content hidden"><textarea id="html-content-${index}" class="w-full h-96 p-3 text-sm rounded-lg border bg-slate-900 border-slate-600 text-slate-300 font-mono" readonly>${
+						result.html
+					}</textarea></div>
+                        </div>
+                    </div>`;
+					resultsSummary.appendChild(resultCard);
+				});
+
+				document.querySelectorAll(".tab-btn").forEach((button) => {
+					button.onclick = (e) => {
+						const tabGroup = e.target.closest(".flex-grow");
+						const tabId = e.target.dataset.tab;
+						tabGroup
+							.querySelectorAll(".tab-btn")
+							.forEach((btn) => btn.classList.remove("active"));
+						e.target.classList.add("active");
+						tabGroup
+							.querySelectorAll(".tab-content")
+							.forEach((content) =>
+								content.classList.toggle("hidden", content.id !== tabId)
+							);
+					};
+				});
+
+				document.querySelectorAll(".copy-btn").forEach((button) => {
+					button.onclick = (e) => {
+						const htmlId = e.currentTarget.dataset.htmlId;
+						const textarea = document.getElementById(htmlId);
+						textarea.select();
+						document.execCommand("copy");
+						showMessage("HTML copied!", "success", 1500);
+					};
+				});
+
+				document.querySelectorAll(".download-btn").forEach((button) => {
+					button.onclick = (e) => {
+						const resultIndex = e.currentTarget.dataset.resultIndex;
+						const result = state.testResults[resultIndex];
+						const cleanModelName = result.model.replace(/[\/:]/g, "_");
+						const blob = new Blob([result.html], { type: "text/html" });
+						const url = URL.createObjectURL(blob);
+						const a = document.createElement("a");
+						a.href = url;
+						a.download = `${cleanModelName}.html`;
+						document.body.appendChild(a);
+						a.click();
+						document.body.removeChild(a);
+						URL.revokeObjectURL(url);
+						showMessage("HTML downloaded!", "success", 1500);
+					};
+				});
+
+				renderChart();
+			}
+			function renderChart() {
+				const chartData = {
+					labels: state.testResults.map((r) => r.model.split("/").pop()),
+					datasets: [
+						{
+							label: "Generation Speed (s)",
+							data: state.testResults.map((r) =>
+								r.speed !== "N/A" ? parseFloat(r.speed) : 0
+							),
+							backgroundColor: "rgba(249, 115, 22, 0.6)",
+							borderColor: "rgb(249, 115, 22)",
+							borderWidth: 1,
+						},
+						{
+							label: "Tokens Used",
+							data: state.testResults.map((r) => r.tokensUsed),
+							backgroundColor: "rgba(56, 189, 248, 0.6)",
+							borderColor: "rgb(56, 189, 248)",
+							borderWidth: 1,
+						},
+						{
+							label: "Tokens/Second",
+							data: state.testResults.map((r) => r.tokensPerSecond),
+							backgroundColor: "rgba(20, 184, 166, 0.6)",
+							borderColor: "rgb(20, 184, 166)",
+							borderWidth: 1,
+						},
+					],
+				};
+				const chartConfig = {
+					type: "bar",
+					data: chartData,
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						scales: {
+							y: {
+								beginAtZero: true,
+								grid: { color: "rgba(255, 255, 255, 0.1)" },
+								ticks: { color: "#94a3b8" },
+							},
+							x: {
+								grid: { display: false },
+								ticks: { color: "#94a3b8" },
+							},
+						},
+						plugins: { legend: { labels: { color: "#e2e8f0" } } },
+					},
+				};
+				if (performanceChart) performanceChart.destroy();
+				performanceChart = new Chart(performanceChartCanvas, chartConfig);
+			}
+
+			// --- Event Listeners ---
+			mainPageBtn.addEventListener("click", () => togglePage("main-page"));
+			settingsPageBtn.addEventListener("click", () =>
+				togglePage("settings-page")
+			);
+			fetchOpenaiBtn.addEventListener("click", () => fetchModels("openai"));
+			fetchOpenrouterBtn.addEventListener("click", () =>
+				fetchModels("openrouter")
+			);
+			fetchAnthropicBtn.addEventListener("click", () =>
+				fetchModels("anthropic")
+			);
+			fetchGeminiBtn.addEventListener("click", () => fetchModels("gemini"));
+			saveSettingsBtn.addEventListener("click", saveSettingsToLocalStorage);
+			runTestBtn.addEventListener("click", async () => {
+				const selectedModels = Array.from(
+					document.querySelectorAll('input[name="model-select"]:checked')
+				).map((cb) => cb.value);
+				if (selectedModels.length === 0) {
+					showMessage("Please select at least one model in Settings.", "error");
+					togglePage("settings-page");
+					return;
+				}
+				runTestText.classList.add("hidden");
+				loadingSpinner.classList.remove("hidden");
+				runTestBtn.disabled = true;
+				resultsSection.classList.add("hidden");
+				resultsSummary.innerHTML = "";
+
+				const promises = selectedModels.map((modelId) =>
+					runBenchmarkForModel(modelId)
+				);
+				state.testResults = await Promise.all(promises);
+
+				renderResults();
+
+				runTestText.classList.remove("hidden");
+				loadingSpinner.classList.add("hidden");
+				runTestBtn.disabled = false;
+				resultsSection.classList.remove("hidden");
+				showMessage(
+					`Benchmark complete for ${state.testResults.length} models!`,
+					"success"
+				);
+			});
+
+			// --- Initial Setup ---
+			window.onload = () => {
+				const styleSheet = document.createElement("style");
+				styleSheet.innerText = `
+                .nav-btn { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; padding: 0.5rem 1rem; border-radius: 0.375rem; transition: color 0.2s, background-color 0.2s; color: #cbd5e1; }
+                .nav-btn:hover { background-color: #334155; }
+                .nav-btn.active { background-color: #f97316; color: white; }
+                .btn-secondary { background-color: #475569; color: white; font-weight: 600; padding: 0.5rem 1rem; border-radius: 0.5rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: all 0.2s; }
+                .btn-secondary:hover { background-color: #64748b; }
+                .model-container { max-height: 15rem; overflow-y: auto; padding-right: 0.5rem; }
+                .tab-btn { padding: 8px 16px; border-bottom: 2px solid transparent; color: #94a3b8; font-weight: 600; transition: all 0.2s; }
+                .tab-btn.active { color: #f97316; border-bottom-color: #f97316; }
+                .tab-btn:hover:not(.active) { background-color: rgba(255,255,255,0.05); }
+                .copy-btn, .download-btn { background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 8px; border-radius: 6px; transition: all 0.2s; }
+                .copy-btn:hover, .download-btn:hover { background-color: rgba(255,255,255,0.1); color: white; }
+            `;
+				document.head.appendChild(styleSheet);
+				saveSettingsBtn.disabled = false;
+				togglePage("main-page");
+				loadSettingsFromLocalStorage();
+			};
+		</script>
+	</body>
+</html>
